@@ -157,8 +157,46 @@ class SolaxEncryptedApiClient:
 
         result = data.get("result")
         if not isinstance(result, list):
+            _LOGGER.warning(
+                "Unexpected paramInit result type for inverter %s: %s",
+                self._inverter_sn,
+                type(result).__name__,
+            )
             return None
 
+        # Common format: array where index == register number.
+        if result and not isinstance(result[0], dict):
+            if len(result) <= REG_EXPORT_LIMIT:
+                _LOGGER.warning(
+                    "paramInit result too short for register %s on inverter %s (len=%s)",
+                    REG_EXPORT_LIMIT,
+                    self._inverter_sn,
+                    len(result),
+                )
+                return None
+
+            try:
+                reg_value = float(result[REG_EXPORT_LIMIT])
+                export_limit = int(reg_value * 10)
+                _LOGGER.debug(
+                    "Current export limit for inverter %s is %s W (array index %s value=%s)",
+                    self._inverter_sn,
+                    export_limit,
+                    REG_EXPORT_LIMIT,
+                    result[REG_EXPORT_LIMIT],
+                )
+                return export_limit
+            except (TypeError, ValueError) as err:
+                _LOGGER.warning(
+                    "Invalid export limit array value at index %s for inverter %s: %s (%s)",
+                    REG_EXPORT_LIMIT,
+                    self._inverter_sn,
+                    result[REG_EXPORT_LIMIT],
+                    err,
+                )
+                return None
+
+        # Alternative format: list of dicts with explicit reg/val pairs.
         for item in result:
             if isinstance(item, dict) and item.get("reg") == REG_EXPORT_LIMIT:
                 val = item.get("val")
