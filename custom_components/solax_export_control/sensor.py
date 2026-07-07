@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import ATTR_EXPORT_LIMIT_W, DOMAIN
+from .const import ATTR_EXPORT_LIMIT_W, ATTR_LAST_ERROR, ATTR_LAST_UPDATE_SUCCESS, DOMAIN
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
@@ -27,3 +27,10 @@ class SolaxExportLimitSensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self):
         return self.coordinator.data.get(ATTR_EXPORT_LIMIT_W)
+
+    @property
+    def extra_state_attributes(self):
+        return {
+            ATTR_LAST_UPDATE_SUCCESS: self.coordinator.data.get(ATTR_LAST_UPDATE_SUCCESS),
+            ATTR_LAST_ERROR: self.coordinator.data.get(ATTR_LAST_ERROR),
+        }

@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import time
 import uuid
 from collections import OrderedDict
@@ -11,6 +12,8 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 
 from .const import REG_EXPORT_LIMIT, REG_PIN
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class SolaxApiError(Exception):
@@ -87,6 +90,7 @@ class SolaxEncryptedApiClient:
         }
 
     async def _post_encrypted(self, path: str, data_payload: OrderedDict[str, Any]) -> dict[str, Any]:
+        _LOGGER.debug("Posting encrypted Solax request to %s for inverter %s", path, self._inverter_sn)
         encrypted_body = self._encrypt_payload(data_payload)
         encrypted_query = self._build_query_payload()
         full_url = f"{self.BASE_URL}{path}?data={quote(encrypted_query, safe='')}"
@@ -101,19 +105,26 @@ class SolaxEncryptedApiClient:
             response_data = await resp.json(content_type=None)
 
         if not isinstance(response_data, dict) or "data" not in response_data:
+            _LOGGER.error("Unexpected Solax response shape for %s: %s", path, response_data)
             raise SolaxApiError(f"Unexpected Solax response: {response_data}")
 
         try:
             decrypted = self._decrypt(response_data["data"])
             parsed = json.loads(decrypted)
         except Exception as err:
+            _LOGGER.exception("Failed to decrypt Solax response for %s", path)
             raise SolaxApiError(f"Failed to decrypt/parse response: {err}") from err
+
+        _LOGGER.debug("Decrypted Solax response for %s: success=%s result=%s", path, parsed.get("success"), parsed.get("result"))
 
         return parsed
 
     async def async_unlock_with_pin(self) -> dict[str, Any] | None:
         if not self._pin:
+            _LOGGER.debug("No PIN configured for inverter %s, skipping unlock", self._inverter_sn)
             return None
+
+        _LOGGER.debug("Unlocking Solax settings for inverter %s using configured PIN", self._inverter_sn)
 
         payload = OrderedDict(
             [
@@ -129,6 +140,7 @@ class SolaxEncryptedApiClient:
         return await self._post_encrypted("/app_api/settingnew/paramSet", payload)
 
     async def async_get_param_init(self) -> dict[str, Any]:
+        _LOGGER.debug("Fetching paramInit for inverter %s", self._inverter_sn)
         payload = OrderedDict(
             [
                 ("tokenId", self._token_id),
@@ -151,14 +163,19 @@ class SolaxEncryptedApiClient:
             if isinstance(item, dict) and item.get("reg") == REG_EXPORT_LIMIT:
                 val = item.get("val")
                 try:
-                    return int(float(val) * 10)
+                    export_limit = int(float(val) * 10)
+                    _LOGGER.debug("Current export limit for inverter %s is %s W", self._inverter_sn, export_limit)
+                    return export_limit
                 except (TypeError, ValueError):
+                    _LOGGER.warning("Invalid export limit value from Solax for inverter %s: %s", self._inverter_sn, val)
                     return None
 
+        _LOGGER.warning("Export limit register not found in paramInit result for inverter %s", self._inverter_sn)
         return None
 
     async def async_set_export_limit_w(self, watts: int) -> dict[str, Any]:
         reg_value = int(watts / 10)
+        _LOGGER.info("Setting export limit for inverter %s to %s W (reg value %s)", self._inverter_sn, watts, reg_value)
 
         payload = OrderedDict(
             [
@@ -173,4 +190,11 @@ class SolaxEncryptedApiClient:
         )
 
         await self.async_unlock_with_pin()
-        return await self._post_encrypted("/app_api/settingnew/paramSet", payload)
+        result = await self._post_encrypted("/app_api/settingnew/paramSet", payload)
+        _LOGGER.info(
+            "Set export limit response for inverter %s: success=%s result=%s",
+            self._inverter_sn,
+            result.get("success"),
+            result.get("result"),
+        )
+        return result
