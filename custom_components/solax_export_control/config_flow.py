@@ -100,6 +100,15 @@ class SolaxExportOptionsFlow(config_entries.OptionsFlow):
             return self.async_create_entry(title="", data=user_input)
 
         defaults = {
+            CONF_SN: self._config_entry.options.get(CONF_SN, self._config_entry.data.get(CONF_SN, "")),
+            CONF_INVERTER_SN: self._config_entry.options.get(
+                CONF_INVERTER_SN,
+                self._config_entry.data.get(CONF_INVERTER_SN, ""),
+            ),
+            CONF_TOKEN_ID: self._config_entry.options.get(
+                CONF_TOKEN_ID,
+                self._config_entry.data.get(CONF_TOKEN_ID, ""),
+            ),
             CONF_PIN: self._config_entry.options.get(CONF_PIN, ""),
             CONF_MIN_EXPORT_W: self._config_entry.options.get(
                 CONF_MIN_EXPORT_W,
@@ -115,6 +124,11 @@ class SolaxExportOptionsFlow(config_entries.OptionsFlow):
             step_id="init",
             data_schema=vol.Schema(
                 {
+                    vol.Optional(CONF_SN, default=defaults[CONF_SN]): str,
+                    vol.Optional(CONF_INVERTER_SN, default=defaults[CONF_INVERTER_SN]): str,
+                    vol.Optional(CONF_TOKEN_ID, default=defaults[CONF_TOKEN_ID]): TextSelector(
+                        TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                    ),
                     vol.Optional(CONF_PIN, default=defaults[CONF_PIN]): TextSelector(
                         TextSelectorConfig(type=TextSelectorType.PASSWORD)
                     ),

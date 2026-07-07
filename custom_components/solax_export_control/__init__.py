@@ -33,13 +33,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     session = async_get_clientsession(hass)
 
     options = entry.options
+    sn = options.get(CONF_SN, entry.data.get(CONF_SN, ""))
+    inverter_sn = options.get(CONF_INVERTER_SN, entry.data.get(CONF_INVERTER_SN, ""))
+    token_id = options.get(CONF_TOKEN_ID, entry.data.get(CONF_TOKEN_ID, ""))
     pin = options.get(CONF_PIN, entry.data.get(CONF_PIN, ""))
 
     api = SolaxEncryptedApiClient(
         session=session,
-        sn=entry.data[CONF_SN],
-        inverter_sn=entry.data[CONF_INVERTER_SN],
-        token_id=entry.data[CONF_TOKEN_ID],
+        sn=sn,
+        inverter_sn=inverter_sn,
+        token_id=token_id,
         pin=pin,
     )
 

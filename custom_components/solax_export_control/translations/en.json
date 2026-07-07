@@ -24,6 +24,9 @@
       "init": {
         "title": "Solax Export Control Options",
         "data": {
+          "sn": "Dongle SN",
+          "inverter_sn": "Inverter SN",
+          "token_id": "Token ID",
           "pin": "Installer PIN",
           "min_export_w": "Minimum export (W)",
           "max_export_w": "Maximum export (W)"
