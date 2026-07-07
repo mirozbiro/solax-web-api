@@ -26,11 +26,13 @@ class SolaxExportLimitSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self):
-        return self.coordinator.data.get(ATTR_EXPORT_LIMIT_W)
+        data = self.coordinator.data or {}
+        return data.get(ATTR_EXPORT_LIMIT_W)
 
     @property
     def extra_state_attributes(self):
+        data = self.coordinator.data or {}
         return {
-            ATTR_LAST_UPDATE_SUCCESS: self.coordinator.data.get(ATTR_LAST_UPDATE_SUCCESS),
-            ATTR_LAST_ERROR: self.coordinator.data.get(ATTR_LAST_ERROR),
+            ATTR_LAST_UPDATE_SUCCESS: data.get(ATTR_LAST_UPDATE_SUCCESS),
+            ATTR_LAST_ERROR: data.get(ATTR_LAST_ERROR),
         }

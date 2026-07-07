@@ -6,10 +6,12 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.exceptions import ConfigEntryNotReady
 
 from .api import SolaxEncryptedApiClient
 from .const import (
+    ATTR_EXPORT_LIMIT_W,
+    ATTR_LAST_ERROR,
+    ATTR_LAST_UPDATE_SUCCESS,
     CONF_INVERTER_SN,
     CONF_MAX_EXPORT_W,
     CONF_MIN_EXPORT_W,
@@ -58,8 +60,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     try:
         await coordinator.async_config_entry_first_refresh()
     except Exception as err:
-        _LOGGER.exception("Initial Solax refresh failed for entry '%s'", entry.title)
-        raise ConfigEntryNotReady(f"Initial refresh failed: {err}") from err
+        _LOGGER.warning(
+            "Initial Solax refresh failed for entry '%s': %s. "
+            "Integration will stay loaded and you can retry with the Refresh Status button.",
+            entry.title,
+            err,
+        )
+        coordinator.data = {
+            ATTR_EXPORT_LIMIT_W: None,
+            ATTR_LAST_UPDATE_SUCCESS: False,
+            ATTR_LAST_ERROR: str(err),
+        }
 
     hass.data[DOMAIN][entry.entry_id] = {
         "api": api,

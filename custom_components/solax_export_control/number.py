@@ -31,7 +31,8 @@ class SolaxExportLimitNumber(CoordinatorEntity, NumberEntity):
 
     @property
     def native_value(self) -> float | None:
-        val = self.coordinator.data.get(ATTR_EXPORT_LIMIT_W)
+        data = self.coordinator.data or {}
+        val = data.get(ATTR_EXPORT_LIMIT_W)
         if val is None:
             return None
         return float(val)
