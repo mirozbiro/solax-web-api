@@ -1,0 +1,2 @@
+# Exclude local testing scripts and data from public repo
+testing/
