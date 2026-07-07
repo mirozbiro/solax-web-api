@@ -1,0 +1,34 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Solax Export Control",
+        "description": "Configure Solax web API encrypted control",
+        "data": {
+          "name": "Name",
+          "sn": "Dongle SN",
+          "inverter_sn": "Inverter SN",
+          "token_id": "Token ID",
+          "pin": "Installer PIN",
+          "min_export_w": "Minimum export (W)",
+          "max_export_w": "Maximum export (W)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect with provided Solax values"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Solax Export Control Options",
+        "data": {
+          "pin": "Installer PIN",
+          "min_export_w": "Minimum export (W)",
+          "max_export_w": "Maximum export (W)"
+        }
+      }
+    }
+  }
+}

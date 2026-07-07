@@ -27,9 +27,15 @@ AES_IV = "NIfb&74GUY86Gfgh"
 
 # Easy-to-edit export limit setting (watts)
 # The browser maps this to Data value as watts / 10.
-EXPORT_LIMIT_WATTS = 1000
+EXPORT_LIMIT_WATTS = 9500
 EXPORT_LIMIT_REG_VALUE = int(EXPORT_LIMIT_WATTS / 10)
 EXPORT_LIMIT_DATA = f'[{{"reg":48,"val":{EXPORT_LIMIT_REG_VALUE}}}]'
+
+# Easy-to-edit write mode
+# - "export": write export limit via reg 48 (value = watts/10)
+# - "pin": write installer PIN via reg 0 (value must be a string)
+WRITE_MODE = "export"
+PIN_VALUE = "2014"
 # ============================================================================
 
 
@@ -107,6 +113,11 @@ async def main() -> None:
     print("🔐 SOLAX WEB API TEST (ENCRYPTED PAYLOAD)")
     print("=" * 60)
 
+    if WRITE_MODE == "pin":
+        data_field = '[{"reg":0,"val":"' + PIN_VALUE + '"}]'
+    else:
+        data_field = EXPORT_LIMIT_DATA
+
     params = OrderedDict([
         ("optType", "setReg"),
         ("num", 1),
@@ -114,7 +125,7 @@ async def main() -> None:
         ("inverterSn", SOLAX_DEVICE_SN),
         ("deviceType", 1),
         ("tokenId", SOLAX_TOKEN_ID),
-        ("Data", EXPORT_LIMIT_DATA),
+        ("Data", data_field),
     ])
 
     body_payload = encrypt_payload(params)

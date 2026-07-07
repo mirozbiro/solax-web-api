@@ -1,0 +1,176 @@
+import base64
+import json
+import time
+import uuid
+from collections import OrderedDict
+from typing import Any
+from urllib.parse import quote
+
+import aiohttp
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+
+from .const import REG_EXPORT_LIMIT, REG_PIN
+
+
+class SolaxApiError(Exception):
+    """Solax API error."""
+
+
+class SolaxEncryptedApiClient:
+    """Client for Solax encrypted web API endpoints."""
+
+    BASE_URL = "https://euapi.solaxcloud.com"
+    AES_KEY = "hj7x22H$yuBI0456"
+    AES_IV = "NIfb&74GUY86Gfgh"
+
+    def __init__(
+        self,
+        session: aiohttp.ClientSession,
+        sn: str,
+        inverter_sn: str,
+        token_id: str,
+        pin: str | None = None,
+    ) -> None:
+        self._session = session
+        self._sn = sn
+        self._inverter_sn = inverter_sn
+        self._token_id = token_id
+        self._pin = pin
+
+    def update_pin(self, pin: str | None) -> None:
+        self._pin = pin
+
+    def _serialize_params(self, params: OrderedDict[str, Any]) -> str:
+        parts: list[str] = []
+        for key, value in params.items():
+            encoded_key = quote(str(key), safe="")
+            encoded_val = quote(str(value), safe="")
+            parts.append(f"{encoded_key}={encoded_val}")
+        return "&".join(parts)
+
+    def _encrypt(self, plain: str) -> str:
+        plaintext = plain.encode("utf-8")
+        padded = pad(plaintext, AES.block_size)
+        cipher = AES.new(self.AES_KEY.encode("utf-8"), AES.MODE_CBC, self.AES_IV.encode("utf-8"))
+        return base64.b64encode(cipher.encrypt(padded)).decode("ascii")
+
+    def _decrypt(self, payload_b64: str) -> str:
+        raw = base64.b64decode(payload_b64)
+        cipher = AES.new(self.AES_KEY.encode("utf-8"), AES.MODE_CBC, self.AES_IV.encode("utf-8"))
+        padded = cipher.decrypt(raw)
+        return unpad(padded, AES.block_size).decode("utf-8")
+
+    def _encrypt_payload(self, params: OrderedDict[str, Any]) -> str:
+        return self._encrypt(self._serialize_params(params))
+
+    def _build_query_payload(self) -> str:
+        query_params = OrderedDict(
+            [
+                ("timeStamp", int(time.time() * 1000)),
+                ("requestId", uuid.uuid4().hex),
+            ]
+        )
+        return self._encrypt_payload(query_params)
+
+    def _base_headers(self) -> dict[str, str]:
+        return {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Referer": "https://global.solaxcloud.com/",
+            "Content-Type": "application/x-www-form-urlencoded",
+            "websiteType": "0",
+            "appVer": "V7.5.0",
+            "crytoVer": "1",
+            "Origin": "https://global.solaxcloud.com",
+        }
+
+    async def _post_encrypted(self, path: str, data_payload: OrderedDict[str, Any]) -> dict[str, Any]:
+        encrypted_body = self._encrypt_payload(data_payload)
+        encrypted_query = self._build_query_payload()
+        full_url = f"{self.BASE_URL}{path}?data={quote(encrypted_query, safe='')}"
+
+        body = {"data": encrypted_body}
+        async with self._session.post(
+            full_url,
+            data=body,
+            headers=self._base_headers(),
+            timeout=30,
+        ) as resp:
+            response_data = await resp.json(content_type=None)
+
+        if not isinstance(response_data, dict) or "data" not in response_data:
+            raise SolaxApiError(f"Unexpected Solax response: {response_data}")
+
+        try:
+            decrypted = self._decrypt(response_data["data"])
+            parsed = json.loads(decrypted)
+        except Exception as err:
+            raise SolaxApiError(f"Failed to decrypt/parse response: {err}") from err
+
+        return parsed
+
+    async def async_unlock_with_pin(self) -> dict[str, Any] | None:
+        if not self._pin:
+            return None
+
+        payload = OrderedDict(
+            [
+                ("optType", "setReg"),
+                ("sn", self._sn),
+                ("inverterSn", self._inverter_sn),
+                ("tokenId", self._token_id),
+                ("num", 1),
+                ("deviceType", 1),
+                ("Data", '[{"reg":' + str(REG_PIN) + ',"val":"' + str(self._pin) + '"}]'),
+            ]
+        )
+        return await self._post_encrypted("/app_api/settingnew/paramSet", payload)
+
+    async def async_get_param_init(self) -> dict[str, Any]:
+        payload = OrderedDict(
+            [
+                ("tokenId", self._token_id),
+                ("sn", self._sn),
+                ("inverterSn", self._inverter_sn),
+                ("deviceType", 1),
+            ]
+        )
+        return await self._post_encrypted("/app_api/settingnew/paramInit", payload)
+
+    async def async_get_export_limit_w(self) -> int | None:
+        await self.async_unlock_with_pin()
+        data = await self.async_get_param_init()
+
+        result = data.get("result")
+        if not isinstance(result, list):
+            return None
+
+        for item in result:
+            if isinstance(item, dict) and item.get("reg") == REG_EXPORT_LIMIT:
+                val = item.get("val")
+                try:
+                    return int(float(val) * 10)
+                except (TypeError, ValueError):
+                    return None
+
+        return None
+
+    async def async_set_export_limit_w(self, watts: int) -> dict[str, Any]:
+        reg_value = int(watts / 10)
+
+        payload = OrderedDict(
+            [
+                ("optType", "setReg"),
+                ("num", 1),
+                ("sn", self._sn),
+                ("inverterSn", self._inverter_sn),
+                ("deviceType", 1),
+                ("tokenId", self._token_id),
+                ("Data", '[{"reg":' + str(REG_EXPORT_LIMIT) + ',"val":' + str(reg_value) + '}]'),
+            ]
+        )
+
+        await self.async_unlock_with_pin()
+        return await self._post_encrypted("/app_api/settingnew/paramSet", payload)
