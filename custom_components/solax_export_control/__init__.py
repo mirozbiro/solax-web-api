@@ -6,6 +6,7 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.exceptions import ConfigEntryNotReady
 
 from .api import SolaxEncryptedApiClient
 from .const import (
@@ -25,7 +26,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN]["logger"] = _LOGGER
+    _LOGGER.debug("Setting up %s integration domain", DOMAIN)
     return True
 
 
@@ -38,6 +39,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     token_id = options.get(CONF_TOKEN_ID, entry.data.get(CONF_TOKEN_ID, ""))
     pin = options.get(CONF_PIN, entry.data.get(CONF_PIN, ""))
 
+    _LOGGER.info(
+        "Initializing Solax entry '%s' (inverter_sn=%s, sn=%s)",
+        entry.title,
+        inverter_sn,
+        sn,
+    )
+
     api = SolaxEncryptedApiClient(
         session=session,
         sn=sn,
@@ -47,7 +55,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     coordinator = SolaxExportCoordinator(hass, api)
-    await coordinator.async_config_entry_first_refresh()
+    try:
+        await coordinator.async_config_entry_first_refresh()
+    except Exception as err:
+        _LOGGER.exception("Initial Solax refresh failed for entry '%s'", entry.title)
+        raise ConfigEntryNotReady(f"Initial refresh failed: {err}") from err
 
     hass.data[DOMAIN][entry.entry_id] = {
         "api": api,
@@ -58,10 +70,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    _LOGGER.info("Solax entry '%s' setup completed", entry.title)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    _LOGGER.info("Unloading Solax entry '%s'", entry.title)
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)

@@ -24,4 +24,9 @@ class SolaxManualRefreshButton(CoordinatorEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         self.coordinator.logger.info("Manual Solax status refresh requested from button")
-        await self.coordinator.async_request_refresh()
+        try:
+            await self.coordinator.async_request_refresh()
+            self.coordinator.logger.info("Manual Solax status refresh completed")
+        except Exception as err:
+            self.coordinator.logger.exception("Manual Solax status refresh failed: %s", err)
+            raise
