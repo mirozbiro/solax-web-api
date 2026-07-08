@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 DOMAIN = "solax_export_control"
+INTEGRATION_VERSION = "0.1.3"
 
 PLATFORMS = ["number", "sensor", "button"]
 

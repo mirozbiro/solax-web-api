@@ -19,6 +19,7 @@ from .const import (
     CONF_SN,
     CONF_TOKEN_ID,
     DOMAIN,
+    INTEGRATION_VERSION,
     PLATFORMS,
 )
 from .coordinator import SolaxExportCoordinator
@@ -41,8 +42,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     token_id = options.get(CONF_TOKEN_ID, entry.data.get(CONF_TOKEN_ID, ""))
     pin = options.get(CONF_PIN, entry.data.get(CONF_PIN, ""))
 
-    _LOGGER.info(
-        "Initializing Solax entry '%s' (inverter_sn=%s, sn=%s)",
+    _LOGGER.warning(
+        "Solax Export Control %s initializing entry '%s' (inverter_sn=%s, sn=%s)",
+        INTEGRATION_VERSION,
         entry.title,
         inverter_sn,
         sn,
@@ -81,12 +83,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    _LOGGER.info("Solax entry '%s' setup completed", entry.title)
+    _LOGGER.warning("Solax Export Control %s setup completed for entry '%s'", INTEGRATION_VERSION, entry.title)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    _LOGGER.info("Unloading Solax entry '%s'", entry.title)
+    _LOGGER.warning("Solax Export Control %s unloading entry '%s'", INTEGRATION_VERSION, entry.title)
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
