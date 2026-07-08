@@ -11,7 +11,7 @@ import aiohttp
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 
-from .const import REG_EXPORT_LIMIT, REG_PIN
+from .const import PARAMINIT_EXPORT_LIMIT_INDEX, REG_EXPORT_LIMIT, REG_PIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -166,32 +166,33 @@ class SolaxEncryptedApiClient:
 
         # Common format: array where index == register number.
         if result and not isinstance(result[0], dict):
-            if len(result) <= REG_EXPORT_LIMIT:
+            if len(result) <= PARAMINIT_EXPORT_LIMIT_INDEX:
                 _LOGGER.warning(
-                    "paramInit result too short for register %s on inverter %s (len=%s)",
-                    REG_EXPORT_LIMIT,
+                    "paramInit result too short for index %s on inverter %s (len=%s)",
+                    PARAMINIT_EXPORT_LIMIT_INDEX,
                     self._inverter_sn,
                     len(result),
                 )
                 return None
 
             try:
-                reg_value = float(result[REG_EXPORT_LIMIT])
+                reg_value = float(result[PARAMINIT_EXPORT_LIMIT_INDEX])
                 export_limit = int(reg_value * 10)
                 _LOGGER.debug(
-                    "Current export limit for inverter %s is %s W (array index %s value=%s)",
+                    "Current export limit for inverter %s is %s W (array index %s for register %s, value=%s)",
                     self._inverter_sn,
                     export_limit,
+                    PARAMINIT_EXPORT_LIMIT_INDEX,
                     REG_EXPORT_LIMIT,
-                    result[REG_EXPORT_LIMIT],
+                    result[PARAMINIT_EXPORT_LIMIT_INDEX],
                 )
                 return export_limit
             except (TypeError, ValueError) as err:
                 _LOGGER.warning(
                     "Invalid export limit array value at index %s for inverter %s: %s (%s)",
-                    REG_EXPORT_LIMIT,
+                    PARAMINIT_EXPORT_LIMIT_INDEX,
                     self._inverter_sn,
-                    result[REG_EXPORT_LIMIT],
+                    result[PARAMINIT_EXPORT_LIMIT_INDEX],
                     err,
                 )
                 return None

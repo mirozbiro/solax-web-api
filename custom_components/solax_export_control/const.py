@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 DOMAIN = "solax_export_control"
-INTEGRATION_VERSION = "0.1.3"
+INTEGRATION_VERSION = "0.1.4"
 
 PLATFORMS = ["number", "sensor", "button"]
 
@@ -18,6 +18,7 @@ DEFAULT_MAX_EXPORT_W = 10000
 DEFAULT_SCAN_INTERVAL = timedelta(hours=1)
 
 REG_EXPORT_LIMIT = 48
+PARAMINIT_EXPORT_LIMIT_INDEX = 47
 REG_PIN = 0
 
 ATTR_EXPORT_LIMIT_W = "export_limit_w"
