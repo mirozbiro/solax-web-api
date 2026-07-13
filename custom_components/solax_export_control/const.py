@@ -1,9 +1,9 @@
 from datetime import timedelta
 
 DOMAIN = "solax_export_control"
-INTEGRATION_VERSION = "0.1.4"
+INTEGRATION_VERSION = "0.1.5"
 
-PLATFORMS = ["number", "sensor", "button"]
+PLATFORMS = ["number", "sensor", "button", "switch"]
 
 CONF_SN = "sn"
 CONF_INVERTER_SN = "inverter_sn"

@@ -77,8 +77,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN][entry.entry_id] = {
         "api": api,
         "coordinator": coordinator,
-        "min_export_w": options.get(CONF_MIN_EXPORT_W, entry.data.get(CONF_MIN_EXPORT_W)),
-        "max_export_w": options.get(CONF_MAX_EXPORT_W, entry.data.get(CONF_MAX_EXPORT_W)),
+        "min_export_w": int(options.get(CONF_MIN_EXPORT_W, entry.data.get(CONF_MIN_EXPORT_W))),
+        "max_export_w": int(options.get(CONF_MAX_EXPORT_W, entry.data.get(CONF_MAX_EXPORT_W))),
     }
 
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))

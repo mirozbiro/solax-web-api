@@ -8,6 +8,7 @@ Custom integration for controlling Solax export limit via the same encrypted web
 - Configure export range (min/max watts)
 - Read current export status from API every hour
 - Optional PIN handling (masked in config flow)
+- A preset switch to jump directly between the configured minimum and maximum export values
 
 ## Install via HACS (Custom Repository)
 
