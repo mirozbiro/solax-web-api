@@ -1,2 +1,4 @@
-# Exclude local testing scripts and data from public repo
-testing/
+# Ignore local Python runtime artifacts under testing/
+testing/venv/
+testing/__pycache__/
+testing/*.pyc
