@@ -11,11 +11,16 @@ CONF_TOKEN_ID = "token_id"
 CONF_PIN = "pin"
 CONF_MIN_EXPORT_W = "min_export_w"
 CONF_MAX_EXPORT_W = "max_export_w"
+CONF_LOG_LEVEL = "log_level"
 
 DEFAULT_NAME = "Solax Export Control"
 DEFAULT_MIN_EXPORT_W = 0
 DEFAULT_MAX_EXPORT_W = 10000
+DEFAULT_LOG_LEVEL = "warning"
 DEFAULT_SCAN_INTERVAL = timedelta(hours=1)
+WRITE_VERIFY_DELAY_SECONDS = 1.2
+
+LOG_LEVELS = ["debug", "info", "warning", "error"]
 
 REG_EXPORT_LIMIT = 48
 PARAMINIT_EXPORT_LIMIT_INDEX = 47

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+
 from homeassistant.components.number import NumberEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfPower
@@ -7,7 +9,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import ATTR_EXPORT_LIMIT_W, DOMAIN
+from .const import ATTR_EXPORT_LIMIT_W, DOMAIN, WRITE_VERIFY_DELAY_SECONDS
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
@@ -48,6 +50,11 @@ class SolaxExportLimitNumber(CoordinatorEntity, NumberEntity):
             raise
 
         current_export_limit = (self.coordinator.data or {}).get(ATTR_EXPORT_LIMIT_W)
+        if current_export_limit != watts:
+            await asyncio.sleep(WRITE_VERIFY_DELAY_SECONDS)
+            await self.coordinator.async_request_refresh()
+            current_export_limit = (self.coordinator.data or {}).get(ATTR_EXPORT_LIMIT_W)
+
         if current_export_limit != watts:
             self.coordinator.logger.warning(
                 "Manual export limit request for %s W completed but read-back value is %s W",

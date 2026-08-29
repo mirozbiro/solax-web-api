@@ -11,7 +11,8 @@
           "token_id": "Token ID",
           "pin": "Installer PIN",
           "min_export_w": "Minimum export (W)",
-          "max_export_w": "Maximum export (W)"
+          "max_export_w": "Maximum export (W)",
+          "log_level": "Integration log level"
         }
       }
     },
@@ -29,7 +30,8 @@
           "token_id": "Token ID",
           "pin": "Installer PIN",
           "min_export_w": "Minimum export (W)",
-          "max_export_w": "Maximum export (W)"
+          "max_export_w": "Maximum export (W)",
+          "log_level": "Integration log level"
         }
       }
     }

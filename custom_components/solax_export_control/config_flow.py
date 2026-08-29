@@ -12,16 +12,19 @@ from homeassistant.helpers.selector import TextSelector, TextSelectorConfig, Tex
 
 from .api import SolaxApiError, SolaxEncryptedApiClient
 from .const import (
+    CONF_LOG_LEVEL,
     CONF_INVERTER_SN,
     CONF_MAX_EXPORT_W,
     CONF_MIN_EXPORT_W,
     CONF_PIN,
     CONF_SN,
     CONF_TOKEN_ID,
+    DEFAULT_LOG_LEVEL,
     DEFAULT_MAX_EXPORT_W,
     DEFAULT_MIN_EXPORT_W,
     DEFAULT_NAME,
     DOMAIN,
+    LOG_LEVELS,
 )
 
 
@@ -60,6 +63,7 @@ class SolaxExportConfigFlow(ConfigFlow, domain=DOMAIN):
                         CONF_PIN: user_input.get(CONF_PIN, ""),
                         CONF_MIN_EXPORT_W: user_input.get(CONF_MIN_EXPORT_W, DEFAULT_MIN_EXPORT_W),
                         CONF_MAX_EXPORT_W: user_input.get(CONF_MAX_EXPORT_W, DEFAULT_MAX_EXPORT_W),
+                        CONF_LOG_LEVEL: user_input.get(CONF_LOG_LEVEL, DEFAULT_LOG_LEVEL),
                     },
                 )
 
@@ -83,6 +87,10 @@ class SolaxExportConfigFlow(ConfigFlow, domain=DOMAIN):
                 vol.Optional(
                     CONF_MAX_EXPORT_W, default=defaults.get(CONF_MAX_EXPORT_W, DEFAULT_MAX_EXPORT_W)
                 ): vol.Coerce(int),
+                vol.Optional(
+                    CONF_LOG_LEVEL,
+                    default=defaults.get(CONF_LOG_LEVEL, DEFAULT_LOG_LEVEL),
+                ): vol.In(LOG_LEVELS),
             }
         )
 
@@ -118,6 +126,7 @@ class SolaxExportOptionsFlow(config_entries.OptionsFlow):
                 CONF_MAX_EXPORT_W,
                 self._config_entry.data.get(CONF_MAX_EXPORT_W, DEFAULT_MAX_EXPORT_W),
             ),
+            CONF_LOG_LEVEL: self._config_entry.options.get(CONF_LOG_LEVEL, DEFAULT_LOG_LEVEL),
         }
 
         return self.async_show_form(
@@ -134,6 +143,7 @@ class SolaxExportOptionsFlow(config_entries.OptionsFlow):
                     ),
                     vol.Optional(CONF_MIN_EXPORT_W, default=defaults[CONF_MIN_EXPORT_W]): vol.Coerce(int),
                     vol.Optional(CONF_MAX_EXPORT_W, default=defaults[CONF_MAX_EXPORT_W]): vol.Coerce(int),
+                    vol.Optional(CONF_LOG_LEVEL, default=defaults[CONF_LOG_LEVEL]): vol.In(LOG_LEVELS),
                 }
             ),
         )

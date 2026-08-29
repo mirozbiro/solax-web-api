@@ -12,12 +12,14 @@ from .const import (
     ATTR_EXPORT_LIMIT_W,
     ATTR_LAST_ERROR,
     ATTR_LAST_UPDATE_SUCCESS,
+    CONF_LOG_LEVEL,
     CONF_INVERTER_SN,
     CONF_MAX_EXPORT_W,
     CONF_MIN_EXPORT_W,
     CONF_PIN,
     CONF_SN,
     CONF_TOKEN_ID,
+    DEFAULT_LOG_LEVEL,
     DOMAIN,
     INTEGRATION_VERSION,
     PLATFORMS,
@@ -25,6 +27,12 @@ from .const import (
 from .coordinator import SolaxExportCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _apply_runtime_log_level(log_level_name: str) -> None:
+    level = getattr(logging, log_level_name.upper(), logging.WARNING)
+    integration_logger = logging.getLogger(f"custom_components.{DOMAIN}")
+    integration_logger.setLevel(level)
 
 
 async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
@@ -41,13 +49,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     inverter_sn = options.get(CONF_INVERTER_SN, entry.data.get(CONF_INVERTER_SN, ""))
     token_id = options.get(CONF_TOKEN_ID, entry.data.get(CONF_TOKEN_ID, ""))
     pin = options.get(CONF_PIN, entry.data.get(CONF_PIN, ""))
+    log_level = options.get(CONF_LOG_LEVEL, DEFAULT_LOG_LEVEL)
+
+    _apply_runtime_log_level(log_level)
 
     _LOGGER.warning(
-        "Solax Export Control %s initializing entry '%s' (inverter_sn=%s, sn=%s)",
+        "Solax Export Control %s initializing entry '%s' (inverter_sn=%s, sn=%s, log_level=%s)",
         INTEGRATION_VERSION,
         entry.title,
         inverter_sn,
         sn,
+        log_level,
     )
 
     api = SolaxEncryptedApiClient(
