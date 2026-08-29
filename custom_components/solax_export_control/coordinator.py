@@ -28,6 +28,8 @@ class SolaxExportCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _async_update_data(self) -> dict[str, Any]:
         try:
+            previous_data = self.data or {}
+            previous_export_limit_w = previous_data.get(ATTR_EXPORT_LIMIT_W)
             self.logger.debug("Refreshing Solax export status")
             export_limit_w = await self.api.async_get_export_limit_w()
             if export_limit_w is None:
@@ -35,6 +37,12 @@ class SolaxExportCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self.logger.warning("Solax refresh completed but export limit is unknown")
             else:
                 self.last_error = None
+            if previous_export_limit_w != export_limit_w:
+                self.logger.warning(
+                    "Solax export limit changed from %s W to %s W during refresh",
+                    previous_export_limit_w,
+                    export_limit_w,
+                )
             self.logger.debug("Solax export status refresh succeeded with export limit %s W", export_limit_w)
             return {
                 ATTR_EXPORT_LIMIT_W: export_limit_w,

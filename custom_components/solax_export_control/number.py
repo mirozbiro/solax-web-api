@@ -39,6 +39,18 @@ class SolaxExportLimitNumber(CoordinatorEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float) -> None:
         watts = int(value)
-        self.coordinator.logger.info("Manual export limit change requested: %s W", watts)
-        await self._api.async_set_export_limit_w(watts)
-        await self.coordinator.async_request_refresh()
+        self.coordinator.logger.warning("Manual export limit change requested: %s W", watts)
+        try:
+            await self._api.async_set_export_limit_w(watts)
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            self.coordinator.logger.exception("Manual export limit change failed for %s W: %s", watts, err)
+            raise
+
+        current_export_limit = (self.coordinator.data or {}).get(ATTR_EXPORT_LIMIT_W)
+        if current_export_limit != watts:
+            self.coordinator.logger.warning(
+                "Manual export limit request for %s W completed but read-back value is %s W",
+                watts,
+                current_export_limit,
+            )

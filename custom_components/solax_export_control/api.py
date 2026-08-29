@@ -214,7 +214,7 @@ class SolaxEncryptedApiClient:
 
     async def async_set_export_limit_w(self, watts: int) -> dict[str, Any]:
         reg_value = int(watts / 10)
-        _LOGGER.info("Setting export limit for inverter %s to %s W (reg value %s)", self._inverter_sn, watts, reg_value)
+        _LOGGER.warning("Setting export limit for inverter %s to %s W (reg value %s)", self._inverter_sn, watts, reg_value)
 
         payload = OrderedDict(
             [
@@ -230,7 +230,8 @@ class SolaxEncryptedApiClient:
 
         await self.async_unlock_with_pin()
         result = await self._post_encrypted("/app_api/settingnew/paramSet", payload)
-        _LOGGER.info(
+        log_fn = _LOGGER.warning if not result.get("success", False) else _LOGGER.info
+        log_fn(
             "Set export limit response for inverter %s: success=%s result=%s",
             self._inverter_sn,
             result.get("success"),

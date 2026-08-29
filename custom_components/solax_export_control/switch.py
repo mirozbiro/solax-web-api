@@ -44,11 +44,33 @@ class SolaxExportPresetSwitch(CoordinatorEntity, SwitchEntity):
         return data.get(ATTR_EXPORT_LIMIT_W) == self._max_export_w
 
     async def async_turn_on(self, **kwargs) -> None:
-        self.coordinator.logger.info("Preset switch set to max export: %s W", self._max_export_w)
-        await self._api.async_set_export_limit_w(self._max_export_w)
-        await self.coordinator.async_request_refresh()
+        self.coordinator.logger.warning("Preset switch set to max export: %s W", self._max_export_w)
+        try:
+            await self._api.async_set_export_limit_w(self._max_export_w)
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            self.coordinator.logger.exception("Preset switch max export request failed: %s", err)
+            raise
+
+        current_export_limit = (self.coordinator.data or {}).get(ATTR_EXPORT_LIMIT_W)
+        if current_export_limit != self._max_export_w:
+            self.coordinator.logger.warning(
+                "Preset switch max export request completed but read-back value is %s W",
+                current_export_limit,
+            )
 
     async def async_turn_off(self, **kwargs) -> None:
-        self.coordinator.logger.info("Preset switch set to min export: %s W", self._min_export_w)
-        await self._api.async_set_export_limit_w(self._min_export_w)
-        await self.coordinator.async_request_refresh()
+        self.coordinator.logger.warning("Preset switch set to min export: %s W", self._min_export_w)
+        try:
+            await self._api.async_set_export_limit_w(self._min_export_w)
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            self.coordinator.logger.exception("Preset switch min export request failed: %s", err)
+            raise
+
+        current_export_limit = (self.coordinator.data or {}).get(ATTR_EXPORT_LIMIT_W)
+        if current_export_limit != self._min_export_w:
+            self.coordinator.logger.warning(
+                "Preset switch min export request completed but read-back value is %s W",
+                current_export_limit,
+            )
