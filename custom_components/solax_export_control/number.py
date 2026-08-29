@@ -27,6 +27,7 @@ class SolaxExportLimitNumber(CoordinatorEntity, NumberEntity):
         super().__init__(coordinator)
         self._entry = entry
         self._api = api
+        self._command_lock = asyncio.Lock()
         self._attr_unique_id = f"{entry.unique_id}_export_limit"
         self._attr_native_min_value = min_export_w
         self._attr_native_max_value = max_export_w
@@ -41,23 +42,32 @@ class SolaxExportLimitNumber(CoordinatorEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float) -> None:
         watts = int(value)
-        self.coordinator.logger.warning("Manual export limit change requested: %s W", watts)
-        try:
-            await self._api.async_set_export_limit_w(watts)
-            await self.coordinator.async_request_refresh()
-        except Exception as err:
-            self.coordinator.logger.exception("Manual export limit change failed for %s W: %s", watts, err)
-            raise
-
-        current_export_limit = (self.coordinator.data or {}).get(ATTR_EXPORT_LIMIT_W)
-        if current_export_limit != watts:
-            await asyncio.sleep(WRITE_VERIFY_DELAY_SECONDS)
-            await self.coordinator.async_request_refresh()
+        async with self._command_lock:
             current_export_limit = (self.coordinator.data or {}).get(ATTR_EXPORT_LIMIT_W)
+            if current_export_limit == watts:
+                self.coordinator.logger.debug(
+                    "Manual export limit request skipped; export limit already %s W",
+                    watts,
+                )
+                return
 
-        if current_export_limit != watts:
-            self.coordinator.logger.warning(
-                "Manual export limit request for %s W completed but read-back value is %s W",
-                watts,
-                current_export_limit,
-            )
+            self.coordinator.logger.warning("Manual export limit change requested: %s W", watts)
+            try:
+                await self._api.async_set_export_limit_w(watts)
+                await self.coordinator.async_request_refresh()
+            except Exception as err:
+                self.coordinator.logger.exception("Manual export limit change failed for %s W: %s", watts, err)
+                raise
+
+            current_export_limit = (self.coordinator.data or {}).get(ATTR_EXPORT_LIMIT_W)
+            if current_export_limit != watts:
+                await asyncio.sleep(WRITE_VERIFY_DELAY_SECONDS)
+                await self.coordinator.async_request_refresh()
+                current_export_limit = (self.coordinator.data or {}).get(ATTR_EXPORT_LIMIT_W)
+
+            if current_export_limit != watts:
+                self.coordinator.logger.warning(
+                    "Manual export limit request for %s W completed but read-back value is %s W",
+                    watts,
+                    current_export_limit,
+                )
