@@ -152,8 +152,18 @@ class SolaxEncryptedApiClient:
         return await self._post_encrypted("/app_api/settingnew/paramInit", payload)
 
     async def async_get_export_limit_w(self) -> int | None:
-        await self.async_unlock_with_pin()
+        # Prefer read-only polling; some inverter/firmware combinations allow
+        # paramInit without an unlock write, which avoids side effects/noise.
         data = await self.async_get_param_init()
+
+        if not data.get("success", True):
+            _LOGGER.debug(
+                "paramInit read returned success=%s for inverter %s; retrying once after unlock",
+                data.get("success"),
+                self._inverter_sn,
+            )
+            await self.async_unlock_with_pin()
+            data = await self.async_get_param_init()
 
         result = data.get("result")
         if not isinstance(result, list):
