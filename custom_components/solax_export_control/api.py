@@ -240,6 +240,21 @@ class SolaxEncryptedApiClient:
 
         await self.async_unlock_with_pin()
         result = await self._post_encrypted("/app_api/settingnew/paramSet", payload)
+        
+        # Handle known error codes
+        result_code = result.get("result")
+        if not result.get("success", False):
+            if result_code == 5:
+                _LOGGER.error(
+                    "Export limit set failed with result=5 (value may be out of range or not supported by inverter). "
+                    "Try a different value or check inverter firmware."
+                )
+            elif isinstance(result_code, str) and "tokenId" in result_code:
+                _LOGGER.error(
+                    "Token ID is invalid or expired. Please re-obtain token_id from Solax web UI "
+                    "(localStorage: tokenId) and update the integration configuration."
+                )
+        
         log_fn = _LOGGER.warning if not result.get("success", False) else _LOGGER.info
         log_fn(
             "Set export limit response for inverter %s: success=%s result=%s",

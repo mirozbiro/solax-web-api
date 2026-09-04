@@ -51,6 +51,13 @@ class SolaxExportLimitNumber(CoordinatorEntity, NumberEntity):
                 )
                 return
 
+            # Warn if trying to set 0W which some inverters don't support
+            if watts == 0:
+                self.coordinator.logger.warning(
+                    "Setting export limit to 0 W - some inverters may not support this value. "
+                    "If this fails with result=5, consider using a small positive value (e.g., 100 W)."
+                )
+
             self.coordinator.logger.warning("Manual export limit change requested: %s W", watts)
             try:
                 await self._api.async_set_export_limit_w(watts)
