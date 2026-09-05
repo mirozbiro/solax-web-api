@@ -246,8 +246,9 @@ class SolaxEncryptedApiClient:
         if not result.get("success", False):
             if result_code == 5:
                 _LOGGER.error(
-                    "Export limit set failed with result=5 (value may be out of range or not supported by inverter). "
-                    "Try a different value or check inverter firmware."
+                    "Export limit set failed with result=5. This often means the inverter is in a state "
+                    "where settings cannot be changed (e.g. low light / no PV generation at night). "
+                    "Try again when the panels are producing power, or check inverter firmware."
                 )
             elif isinstance(result_code, str) and "tokenId" in result_code:
                 _LOGGER.error(

@@ -86,13 +86,6 @@ class SolaxExportPresetSwitch(CoordinatorEntity, SwitchEntity):
                 )
                 return
 
-            # Warn if trying to set 0W which some inverters don't support
-            if self._min_export_w == 0:
-                self.coordinator.logger.warning(
-                    "Setting export limit to 0 W - some inverters may not support this value. "
-                    "If this fails with result=5, consider setting min_export_w to a small positive value (e.g., 100 W)."
-                )
-
             self.coordinator.logger.warning("Preset switch set to min export: %s W", self._min_export_w)
             try:
                 await self._api.async_set_export_limit_w(self._min_export_w)
